@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+   <head>
+      <title>GAS UPDATER</title>
+      <script type = "text/JavaScript">
+         
+        function httpGetAsync(theUrl, type, payload, is_image, callback) {
+            let xmlHttpReq = new XMLHttpRequest();
+            xmlHttpReq.onreadystatechange = function () {
+                if(xmlHttpReq.readyState == 4)
+                    callback(xmlHttpReq);
+            }
+            xmlHttpReq.open(type, theUrl, true); // true for asynchronous 
+
+            xmlHttpReq.setRequestHeader("Accept", "application/json");
+            xmlHttpReq.setRequestHeader("Content-Type", "application/json");
+            if(is_image)
+                xmlHttpReq.responseType = "blob";
+
+            console.log(payload);
+            xmlHttpReq.send(payload);
+        }
+         
+        function EventHandler() {
+            let inputVal = document.getElementById("inputId").value;
+            if (!(/^\d{5,5},\d{3,3}$/.test(inputVal))){
+                alert("Zahl hat inkorrektes Format. Beachte -> 00000,000");
+                return;
+            }
+            const payload = JSON.stringify({"reading":inputVal});
+            httpGetAsync(window.location.href + "log", "POST", payload, false, function(result){
+                if (result.status != 200){
+                    console.log(result);
+                    var result_obj = JSON.parse(result.response);
+                    alert(result.status + " " + result_obj["detail"]);
+                }
+
+            });
+        }
+
+        function ImageHandler(type) {
+            let typestrings = ["absolute", "daily", "weekly"]
+            httpGetAsync(window.location.href + "plots/"+typestrings[type], "GET", NaN, true, function(result){
+                if (result.status != 200){
+                    console.log(result);
+                    //var result_obj = JSON.parse(result.response);
+                    alert(result.status + " " + result.status_text);
+                }
+                var urlCreator = window.URL || window.webkitURL;
+                var imageUrl = urlCreator.createObjectURL(result.response);
+                document.querySelector("#plot").src = imageUrl;
+                //document.body.appendChild(URL.createObjectURL(result.blob()));
+            });
+
+        }
+      </script>
+   </head>
+
+   <body>
+    <input type="text" placeholder="00000.000" id="inputId">
+    <button onclick = "EventHandler();">Neuer Eintrag</button>
+    <button onclick = "ImageHandler(0);">Absolute Gasstände</button>
+    <button onclick = "ImageHandler(1);">Tägliche Verbräuche</button>
+    <button onclick = "ImageHandler(2);">Wöchentliche Verbräuche</button>
+    <img id="plot"/>
+   </body>
+
+</html>
+
+
